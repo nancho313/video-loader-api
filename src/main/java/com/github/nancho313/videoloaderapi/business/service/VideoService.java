@@ -5,8 +5,8 @@ import com.github.nancho313.videoloaderapi.infrastructure.messaging.dto.VideoToP
 import com.github.nancho313.videoloaderapi.infrastructure.messaging.publisher.NotifyVideoToProcessPublisher;
 import com.github.nancho313.videoloaderapi.infrastructure.persistence.dao.VideoDao;
 import com.github.nancho313.videoloaderapi.infrastructure.persistence.entity.VideoEntity;
+import com.github.nancho313.videoloaderapi.infrastructure.s3.S3Integrator;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,16 +24,16 @@ public class VideoService {
 
   private final NotifyVideoToProcessPublisher notifyVideoToProcessPublisher;
 
-  private final String serviceEndpoint;
+  private final S3Integrator s3Integrator;
 
   public VideoService(IOHelper ioHelper,
                       VideoDao videoDao,
                       NotifyVideoToProcessPublisher notifyVideoToProcessPublisher,
-                      @Value("${app.service-endpoint}") String serviceEndpoint) {
+                      S3Integrator s3Integrator) {
     this.ioHelper = ioHelper;
     this.videoDao = videoDao;
     this.notifyVideoToProcessPublisher = notifyVideoToProcessPublisher;
-    this.serviceEndpoint = serviceEndpoint;
+    this.s3Integrator = s3Integrator;
   }
 
   @SneakyThrows
@@ -47,9 +47,8 @@ public class VideoService {
     ioHelper.validateResolutionAndDuration(videoFile.getBytes());
 
     var taskId = UUID.randomUUID().toString();
-    var fileName = ioHelper.storeVideo(videoFile.getBytes(), title);
-    var originalUrl = serviceEndpoint + "/original/" + fileName;
-    var newVideo = new VideoEntity(UUID.randomUUID().toString(), userId, title, fileName, originalUrl, null, "PENDING", LocalDateTime.now(), null);
+    var originalUrl = s3Integrator.storeVideo(videoFile.getBytes(), title);
+    var newVideo = new VideoEntity(UUID.randomUUID().toString(), userId, title, title, originalUrl, null, "PENDING", LocalDateTime.now(), null);
     videoDao.save(newVideo);
     notifyVideoToProcessPublisher.sentVideoToProcess(new VideoToProcessMessage(newVideo.getId(), taskId));
     return taskId;

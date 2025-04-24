@@ -1,23 +1,12 @@
 package com.github.nancho313.videoloaderapi.infrastructure.io;
 
-import lombok.SneakyThrows;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
 
 @Component
 public class IOHelper {
-
-  private final String folderDir;
-
-  public IOHelper(@Value("${app.folder-dir}") String folderDir) {
-    this.folderDir = folderDir;
-  }
 
   public void validateResolutionAndDuration(byte[] video) {
 
@@ -48,14 +37,5 @@ public class IOHelper {
     } catch (Exception e) {
       throw new RuntimeException("Something went wrong when validating the video.");
     }
-  }
-
-  @SneakyThrows
-  public String storeVideo(byte[] video, String title) {
-
-    String fileName = (title + Instant.now().toEpochMilli()).replace(" ", "_");
-    String originalUrl = folderDir+ "/original/" + fileName;
-    Files.write(Path.of(originalUrl), video);
-    return fileName;
   }
 }
